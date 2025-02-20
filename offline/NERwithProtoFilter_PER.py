@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-
-
 from langchain_ollama import ChatOllama
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-import io
 import numpy as np
 import pandas as pd
 import math
@@ -48,7 +45,6 @@ def PER_compareDistance_for_wrongclass_to_remove(list, llm_index,a):
     else:
         return False
 
-
 def PER_compareDistance_for_missMISC(list, llm_index,b):
 
     if Proto_PER_missMISC_right[llm_index][0] - float(list[0])> b* Proto_PER_missMISC_wrong_dis2pro[llm_index] :
@@ -57,8 +53,6 @@ def PER_compareDistance_for_missMISC(list, llm_index,b):
         return True
     else:
         return False
-
-
 
 def remove_subsets(strings):
     to_remove = []
@@ -74,13 +68,11 @@ def remove_subsets(strings):
 
     return result
 
-
 def remove_before_last_colon(s):
     index = s.rfind(':')
     if index != -1:
         return s[index + 1:]
     return s
-
 
 def filter_non_int_convertible_elements(lst):
     indices_to_remove = []
@@ -94,6 +86,7 @@ def filter_non_int_convertible_elements(lst):
         del lst[index]
 
     return lst, indices_to_remove
+
 
 a_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 b_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
@@ -133,13 +126,10 @@ Proto_PER_missMISC_wrong_disp = [0.9780883031022612]
 Proto_PER_missMISC_wrong_dis2pro = [1.4181204152249136]
 
 
-
 for a in a_list:
     for b in b_list:
         for llm_index in range(len(llm_list)):
             llm = ChatOllama(model=llm_list[llm_index])
-
-            output_buffer = io.StringIO()
 
             all_rule_list = []
 
@@ -168,9 +158,6 @@ for a in a_list:
                 increase_PER_head_wrong_by_lmm1 = 0
                 increase_PER_head_wrong_by_lmm2 = 0
 
-
-                print("line:" + str(line_num), file=output_buffer)
-
                 cell_sentence = row[0]
                 if pd.isna(row[1]):
                     cell_entity = []
@@ -185,11 +172,6 @@ for a in a_list:
                     cell_class = row[2].split(', ')
                 else:
                     cell_class = str(row[2])
-
-
-
-
-
 
                 template0 = """
                             You are a helpful named entity recognition assistant. 
@@ -219,12 +201,12 @@ for a in a_list:
 
                 template1 = """
                             Here is the entity class information: Person: This category includes names of persons, such as individual people or groups of people with personal names.
-                              -Please rate the relevance of each phrase in the following list to the type "person" on a scale of 1 to 10.
-                              -Please only respond all entities in the list with rating strictly in the format: "Entity//Rating" for only one phrase or "Entity//Rating, Entity//Rating" for two or more phrases, without any other words.
+                            -Please rate the relevance of each phrase in the following list to the type "person" on a scale of 1 to 10.
+                            -Please only respond all entities in the list with rating strictly in the format: "Entity//Rating" for only one phrase or "Entity//Rating, Entity//Rating" for two or more phrases, without any other words.
 
-                              If the list is empty, please respond with an empty string: "" without any other words.
+                            If the list is empty, please respond with an empty string: "" without any other words.
 
-                              list: {Entity_list}
+                            list: {Entity_list}
                             """
 
                 template4 = """
@@ -249,13 +231,8 @@ for a in a_list:
                 prompt1 = ChatPromptTemplate.from_template(template1)
                 output_parser = CommaSeparatedListOutputParser()
                 chain1 = prompt1 | llm | output_parser
-                res1 = chain1.invoke({"Entity_list": str(res0_list)}).replace('"', '').replace("'", "").replace("\n",
-                                                                                                                "").replace(
-                    "* ", "").replace("*", "").replace(".", "")
+                res1 = chain1.invoke({"Entity_list": str(res0_list)}).replace('"', '').replace("'", "").replace("\n","").replace("* ", "").replace("*", "").replace(".", "")
 
-
-                print("PER:", file=output_buffer)
-                print(res1, file=output_buffer)
 
                 print("PER:")
                 print(res1)
@@ -267,7 +244,6 @@ for a in a_list:
 
                     res1_list = [item for item in res1_list if item not in ('', []) and item is not None]
 
-                    print(res1_list, file=output_buffer)
                     print(res1_list)
 
                     for predict_PER in res1_list:
@@ -292,11 +268,8 @@ for a in a_list:
                 prompt4 = ChatPromptTemplate.from_template(template4)
                 output_parser = CommaSeparatedListOutputParser()
                 chain4 = prompt4 | llm | output_parser
-                res4 = chain4.invoke({"sentence": cell_sentence}).replace('"', '').replace(
-                    "'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
+                res4 = chain4.invoke({"sentence": cell_sentence}).replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
 
-                print("MISC:", file=output_buffer)
-                print(res4, file=output_buffer)
 
                 print("MISC:")
                 print(res4)
@@ -308,7 +281,6 @@ for a in a_list:
                     res4_list = [item.strip() for item in res4.split(',')]
                     res4_list = [item for item in res4_list if item not in ('', []) and item is not None]
 
-                    print(res4_list, file=output_buffer)
                     print(res4_list)
 
                     for predict_MISC in res4_list:
@@ -350,7 +322,6 @@ for a in a_list:
                 if len(final_PER_prediction_list) > 0:
                     res1_list = final_PER_prediction_list
 
-                    print(res1_list, file=output_buffer)
                     print(res1_list)
 
                     llm_PER_entity_num += len(res1_list)
@@ -466,15 +437,6 @@ for a in a_list:
 
                 print("---" * 30)
 
-                print("PER_entity_num: " + str(PER_entity_num), file=output_buffer)
-                print("llm_PER_entity_right_num: " + str(llm_PER_entity_right_num), file=output_buffer)
-                print("llm_PER_entity_num: " + str(llm_PER_entity_num), file=output_buffer)
-                print("PER_wrong_class_by_lmm: " + str(PER_wrong_class_by_lmm), file=output_buffer)
-                print("PER_inside_wrong_by_lmm: " + str(PER_inside_wrong_by_lmm), file=output_buffer)
-                print("PER_head_wrong_by_lmm: " + str(PER_head_wrong_by_lmm), file=output_buffer)
-                print("PER_miss_by_lmm: " + str(PER_miss_by_lmm), file=output_buffer)
-                print("---" * 30, file=output_buffer)
-
                 line_num += 1
 
             P = llm_PER_entity_right_num / llm_PER_entity_num
@@ -483,15 +445,8 @@ for a in a_list:
 
             f1 = (2 * P * R) / (P + R)
 
-            print("f1: " + str(f1), file=output_buffer)
             print("f1: " + str(f1))
 
-            output_str = output_buffer.getvalue()
-
-            with open(r"" + "\CoNLL_testset_" + llm_onlyname_list[llm_index] + "_PER_withfilter_result_with_describe_0_shot_a:" + str(a) +"b:"+str(b)+ ".txt", "w", encoding="utf-8") as file:
-                file.write(output_str)
-
-            output_buffer.close()
 
 
 

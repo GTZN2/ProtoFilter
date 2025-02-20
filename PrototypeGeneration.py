@@ -7,7 +7,6 @@ missPER:[0,n,0]
 missMISC:[n,0,bool]
 """
 
-
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
@@ -141,9 +140,6 @@ def normList(raw_list):
 
     return normls
 
-
-output_buffer = io.StringIO()
-
 raw_list = []
 
 normls = normList(raw_list)
@@ -209,39 +205,6 @@ print("prototype_for_missMISC_wrong: " + str(prototype_for_missMISC_wrong) + '\n
 print("prototype_for_missMISC_wrong_disp: " + str(prototype_for_missMISC_wrong_disp) + '\n')
 print("prototype_for_missMISC_wrong_meandist: " + str(prototype_for_missMISC_wrong_meandist) + '\n')
 
-print("rating_list_for_wrongclass_right: " + str(rating_list_for_wrongclass_right) + '\n', file=output_buffer)
-
-print("prototype_for_wrongclass_right: " + str(prototype_for_wrongclass_right) + '\n', file=output_buffer)
-print("prototype_for_wrongclass_right_disp: " + str(prototype_for_wrongclass_right_disp) + '\n', file=output_buffer)
-print("rating_list_for_wrongclass_wrong: " + str(rating_list_for_wrongclass_wrong) + '\n', file=output_buffer)
-#
-print("prototype_for_wrongclass_wrong: " + str(prototype_for_wrongclass_wrong) + '\n', file=output_buffer)
-print("prototype_for_wrongclass_wrong_disp: " + str(prototype_for_wrongclass_wrong_disp) + '\n', file=output_buffer)
-
-print("-----" * 100, file=output_buffer)
-#MISC→PER
-print("rating_list_for_missTarget_right: " + str(rating_list_for_missTarget_right) + '\n', file=output_buffer)
-print("prototype_for_missTarget_right: " + str(prototype_for_missTarget_right) + '\n', file=output_buffer)
-print("prototype_for_missTarget_right_disp: " + str(prototype_for_missTarget_right_disp) + '\n', file=output_buffer)
-print("rating_list_for_missTarget_wrong: " + str(rating_list_for_missTarget_wrong) + '\n', file=output_buffer)
-print("prototype_for_missTarget_wrong: " + str(prototype_for_missTarget_wrong) + '\n', file=output_buffer)
-print("prototype_for_missTarget_wrong_disp: " + str(prototype_for_missTarget_wrong_disp) + '\n', file=output_buffer)
-
-print("-----" * 100, file=output_buffer)
-# 如果有miss，则靠近prototype_for_miss_wrong：MISC→PER
-print("rating_list_for_missMISC_right: " + str(rating_list_for_missMISC_right) + '\n', file=output_buffer)
-print("prototype_for_missMISC_right: " + str(prototype_for_missMISC_right) + '\n', file=output_buffer)
-print("prototype_for_missTarget_right_disp: " + str(prototype_for_missTarget_right_disp) + '\n', file=output_buffer)
-print("rating_list_for_missMISC_wrong: " + str(rating_list_for_missMISC_wrong) + '\n', file=output_buffer)
-print("prototype_for_missMISC_wrong: " + str(prototype_for_missMISC_wrong) + '\n', file=output_buffer)
-print("prototype_for_missTarget_wrong_disp: " + str(prototype_for_missTarget_wrong_disp) + '\n', file=output_buffer)
-
-output_str = output_buffer.getvalue()
 
 
-# with open(r"C:\NER\results\LOC_Proto\CONLL03_testset_"+"qwen2"+"_LOC_Proto.txt", "w", encoding="utf-8") as file:
-# with open(r"C:\NER\results\ORG_Proto\CONLL03_testset_" + "qwen2" + "_ORG_Proto.txt", "w", encoding="utf-8") as file:
-#     file.write(output_str)
 
-
-output_buffer.close()

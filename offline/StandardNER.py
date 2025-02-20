@@ -3,7 +3,6 @@
 from langchain_ollama import ChatOllama
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-import io
 import pandas as pd
 import openpyxl
 
@@ -58,8 +57,6 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
         # num. of ground truth entities
         entity_num = 0
 
-        output_buffer = io.StringIO()
-
         for row in sheet.iter_rows(min_row=2, values_only=True):
 
             print("line:" + str(line_num))
@@ -67,8 +64,6 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
             # repeatedly recorded entities
             increase_head_wrong_by_lmm1 = 0
             increase_head_wrong_by_lmm2 = 0
-
-            print("line:" + str(line_num), file=output_buffer)
 
             # sentence processing
             cell_sentence = row[0]
@@ -111,7 +106,6 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
 
                 res1_list = [item for item in res1_list if item not in ('', []) and item is not None]
 
-                print(res1_list, file=output_buffer)
                 print(res1_list)
 
                 llm_entity_num += len(res1_list)
@@ -225,24 +219,7 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
             print("miss_by_lmm: " + str(miss_by_lmm))
             print("---" * 30)
 
-            print("entity_num: " + str(entity_num), file=output_buffer)
-            print("llm_entity_right_num: " + str(llm_entity_right_num), file=output_buffer)
-            print("llm_entity_num: " + str(llm_entity_num), file=output_buffer)
-            print("wrong_class_by_lmm: " + str(wrong_class_by_lmm), file=output_buffer)
-            print("inside_wrong_by_lmm: " + str(inside_wrong_by_lmm), file=output_buffer)
-            print("head_wrong_by_lmm: " + str(head_wrong_by_lmm), file=output_buffer)
-            print("miss_by_lmm: " + str(miss_by_lmm), file=output_buffer)
-            print("---" * 30, file=output_buffer)
-
-
             line_num += 1
-
-        output_str = output_buffer.getvalue()
-
-        with open("result/" + llm_onlyname_list[llm_index] + "_result_no_decrib_0_shot.txt", "w", encoding="utf-8") as file:
-            file.write(output_str)
-
-        output_buffer.close()
 
 
 if __name__ == "__main__":

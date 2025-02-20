@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-
 from langchain_ollama import ChatOllama
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-import io
 import pandas as pd
 import openpyxl
 
@@ -17,13 +15,11 @@ class CommaSeparatedListOutputParser(BaseOutputParser):
 
         return text.strip()
 
-
 def remove_before_last_colon(s):
     index = s.rfind(':')
     if index != -1:
         return s[index + 1:]
     return s
-
 
 def filter_non_int_convertible_elements(lst):
     indices_to_remove = []
@@ -39,15 +35,12 @@ def filter_non_int_convertible_elements(lst):
     return lst, indices_to_remove
 
 
-def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
+def RatingCollect(llm_list,entity_type,sheet,label_descri):
 
     label = entity_type[:3].upper()
 
     for llm_index in range(len(llm_list)):
         llm = ChatOllama(model=llm_list[llm_index])
-
-
-        output_buffer = io.StringIO()
 
         all_rule_list = []
 
@@ -56,7 +49,6 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
         for row in sheet.iter_rows(min_row=2, values_only=True):
 
             print("line:" + str(line_num))
-            print("line:" + str(line_num), file=output_buffer)
 
             cell_sentence = row[0]
             if pd.isna(row[1]):
@@ -112,9 +104,6 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
             chain1 = prompt1 | llm | output_parser
             res1 = chain1.invoke({"label_descri":label_descri,"type":entity_type,"sentence": cell_sentence}).replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
 
-            print("PER:", file=output_buffer)
-            print(res1, file=output_buffer)
-
             print("PER:")
             print(res1)
 
@@ -125,7 +114,6 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
 
                 res1_list = [item for item in res1_list if item not in ('', []) and item is not None]
 
-                print(res1_list, file=output_buffer)
                 print(res1_list)
 
                 for predict in res1_list:
@@ -146,9 +134,6 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
             chain4 = prompt4 | llm | output_parser
             res4 = chain4.invoke({"label_descri":label_descri,"type":entity_type,"sentence": cell_sentence}).replace('"', '').replace("'", "").replace("\n","").replace("* ", "").replace("*", "").replace(".", "")
 
-            print("MISC:", file=output_buffer)
-            print(res4, file=output_buffer)
-
             print("MISC:")
             print(res4)
 
@@ -159,7 +144,6 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
                 res4_list = [item.strip() for item in res4.split(',')]
                 res4_list = [item for item in res4_list if item not in ('', []) and item is not None]
 
-                print(res4_list, file=output_buffer)
                 print(res4_list)
 
                 for predict_MISC in res4_list:
@@ -227,9 +211,7 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
                             row_rule_list_for_wrongclass.append(rule_list)
 
                 if len(rule_list) > 0:
-                    print(rule_list, file=output_buffer)
                     print(rule_list)
-                    print(row_rule_list_for_wrongclass, file=output_buffer)
                     print(row_rule_list_for_wrongclass)
 
             row_rule_list_for_missTarg = []
@@ -280,9 +262,7 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
                         row_rule_list_for_missTarg.append(rule_list)
 
                 if len(rule_list) > 0:
-                    print(rule_list, file=output_buffer)
                     print(rule_list)
-                    print(row_rule_list_for_missTarg, file=output_buffer)
                     print(row_rule_list_for_missTarg)
 
             row_rule_list_for_missMISC = []
@@ -333,29 +313,19 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
                         row_rule_list_for_missMISC.append(rule_list)
 
                 if len(rule_list) > 0:
-                    print(rule_list, file=output_buffer)
                     print(rule_list)
-                    print(row_rule_list_for_missMISC, file=output_buffer)
                     print(row_rule_list_for_missMISC)
 
             all_rule_list.append(row_rule_list_for_wrongclass)
             all_rule_list.append(row_rule_list_for_missTarg)
             all_rule_list.append(row_rule_list_for_missMISC)
 
-            print("---" * 30, file=output_buffer)
             print("---" * 30)
 
             line_num += 1
-
-        print(all_rule_list, file=output_buffer)
         print(all_rule_list)
-        output_str = output_buffer.getvalue()
 
-        with open(r"C:\NER\results\rating\CONLL03_testset_" + llm_onlyname_list[
-            llm_index] + "_rating_list__no_descirbe_0_shot.txt", "w", encoding="utf-8") as file:
-            file.write(output_str)
 
-        output_buffer.close()
 
 
 

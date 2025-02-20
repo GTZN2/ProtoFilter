@@ -3,7 +3,6 @@
 
 from langchain.schema import BaseOutputParser
 import json
-import io
 import requests
 import pandas as pd
 import openpyxl
@@ -52,9 +51,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
         'Content-Type': 'application/json'
     }
 
-
-    output_buffer = io.StringIO()
-
     all_rule_list = []
 
     line_num = 1
@@ -64,10 +60,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
     for row in sheet.iter_rows(min_row=2, values_only=True):
 
         print("line:" + str(line_num))
-
-
-
-        print("line:" + str(line_num), file=output_buffer)
 
         cell_sentence = row[0]
         if pd.isna(row[1]):
@@ -142,9 +134,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
         res1 = res1.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".",
                                                                                                                    "")
 
-        print("PER:", file=output_buffer)
-        print(res1, file=output_buffer)
-
         print("PER:")
         print(res1)
 
@@ -155,7 +144,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
 
             res1_list = [item for item in res1_list if item not in ('', []) and item is not None]
 
-            print(res1_list, file=output_buffer)
             print(res1_list)
 
             for predict_PER in res1_list:
@@ -191,8 +179,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
         res4 = res4.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".",
                                                                                                                    "")
 
-        print("MISC:", file=output_buffer)
-        print(res4, file=output_buffer)
 
         print("MISC:")
         print(res4)
@@ -203,7 +189,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
             res4_list = [item.strip() for item in res4.split(',')]
             res4_list = [item for item in res4_list if item not in ('', []) and item is not None]
 
-            print(res4_list, file=output_buffer)
             print(res4_list)
 
             for predict_MISC in res4_list:
@@ -271,9 +256,7 @@ def Rating_Collect(sheet,entity_type,label_descri):
                         row_rule_list_for_wrongclass.append(rule_list)
 
             if len(rule_list) > 0:
-                print(rule_list, file=output_buffer)
                 print(rule_list)
-                print(row_rule_list_for_wrongclass, file=output_buffer)
                 print(row_rule_list_for_wrongclass)
 
         row_rule_list_for_missPER = []
@@ -324,9 +307,7 @@ def Rating_Collect(sheet,entity_type,label_descri):
                     row_rule_list_for_missPER.append(rule_list)
 
             if len(rule_list) > 0:
-                print(rule_list, file=output_buffer)
                 print(rule_list)
-                print(row_rule_list_for_missPER, file=output_buffer)
                 print(row_rule_list_for_missPER)
 
         row_rule_list_for_missMISC = []
@@ -377,31 +358,19 @@ def Rating_Collect(sheet,entity_type,label_descri):
                     row_rule_list_for_missMISC.append(rule_list)
 
             if len(rule_list) > 0:
-                print(rule_list, file=output_buffer)
                 print(rule_list)
-                print(row_rule_list_for_missMISC, file=output_buffer)
                 print(row_rule_list_for_missMISC)
 
         all_rule_list.append(row_rule_list_for_wrongclass)
         all_rule_list.append(row_rule_list_for_missPER)
         all_rule_list.append(row_rule_list_for_missMISC)
 
-        print("---" * 30, file=output_buffer)
         print("---" * 30)
 
         line_num += 1
 
-    print(all_rule_list, file=output_buffer)
     print(all_rule_list)
 
-    output_str = output_buffer.getvalue()
-
-
-    with open(r"C:\NER\results\PER_rating\CONLL03_testset_gpt3.5_PER_rating_list_with_descri_0_shot.txt", "w",
-              encoding="utf-8") as file:
-        file.write(output_str)
-
-    output_buffer.close()
 
 
 

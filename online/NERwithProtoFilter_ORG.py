@@ -2,12 +2,8 @@
 
 from langchain.schema import BaseOutputParser
 import json
-import io
-import numpy as np
 import pandas as pd
-
 import math
-
 import openpyxl
 import requests
 from ProtoFilter import config
@@ -32,39 +28,10 @@ class CommaSeparatedListOutputParser(BaseOutputParser):
         return text.strip()
 
 
-def mahalanobis_distance(x, mu, sigma_inv):
-    """
-    计算点 x 到均值 mu 的马氏距离。
-
-    参数:
-    x (numpy.ndarray): 数据点，形状为 (n_features,)。
-    mu (numpy.ndarray): 均值向量，形状为 (n_features,)。
-    sigma_inv (numpy.ndarray): 协方差矩阵的逆，形状为 (n_features, n_features)。
-
-    返回:
-    float: 马氏距离。
-    """
-    delta = x - mu
-    return np.sqrt(delta.T @ sigma_inv @ delta)
-
-
-def ORG_compareDistance_for_wrongclass_to_add(list, llm_index):
-    distance_right4 = math.sqrt((Proto_ORG_wrongclass_right[llm_index][0] - float(list[0])) ** 2 + (
-                Proto_ORG_wrongclass_right[llm_index][1] - float(list[1])) ** 2)
-
-    if distance_right4 > Proto_ORG_wrongclass_right_dis2pro[llm_index] and float(list[0]) >= \
-            Proto_ORG_wrongclass_right[llm_index][0] and float(list[1]) >= Proto_ORG_wrongclass_right[llm_index][1]:
-        return True
-    else:
-        return False
-
-
 def ORG_compareDistance_for_wrongclass_to_remove(list, llm_index, a):
 
     distance_right4 = math.sqrt((Proto_ORG_wrongclass_right[llm_index][0] - float(list[0])) ** 2 + (
             Proto_ORG_wrongclass_right[llm_index][1] - float(list[1])) ** 2)
-
-
 
     if distance_right4 > a * Proto_ORG_wrongclass_right_dis2pro[llm_index] and float(list[0]) < \
             Proto_ORG_wrongclass_wrong[llm_index][0] and float(list[1]) < Proto_ORG_wrongclass_wrong[llm_index][1]:
@@ -82,17 +49,6 @@ def ORG_compareDistance_for_missMISC(list, llm_index, a):
     else:
         return False
 
-
-def ORG_compareDistance_for_missTarget(list, llm_index):
-
-
-    # if distance_right < distance_wrong:
-    if float(list[1]) == 10:
-        return True
-    else:
-        return False
-
-
 def remove_subsets(strings):
     to_remove = []
     for i, s1 in enumerate(strings):
@@ -107,13 +63,11 @@ def remove_subsets(strings):
 
     return result
 
-
 def remove_before_last_colon(s):
     index = s.rfind(':')
     if index != -1:
         return s[index + 1:]
     return s
-
 
 def filter_non_int_convertible_elements(lst):
     indices_to_remove = []
@@ -133,7 +87,6 @@ a_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 b_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
 workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
-
 sheet = workbook.active
 
 Proto_ORG_wrongclass_right = [[9.18993506, 3.96103896]]
@@ -163,7 +116,6 @@ Proto_ORG_missMISC_wrong_dis2pro = [1.1919191919191918]
 
 for a in a_list:
     for b in b_list:
-        output_buffer = io.StringIO()
 
         all_rule_list = []
 
@@ -192,10 +144,6 @@ for a in a_list:
             increase_ORG_head_wrong_by_lmm1 = 0
             increase_ORG_head_wrong_by_lmm2 = 0
 
-
-
-            print("line:" + str(line_num), file=output_buffer)
-
             cell_sentence = row[0]  # 第一列的值
             if pd.isna(row[1]):
                 cell_entity = []
@@ -214,17 +162,17 @@ for a in a_list:
 
 
             template0 = """
-                                You are a helpful named entity recognition assistant.
+                        You are a helpful named entity recognition assistant.
 
-                                Here is the entity type information: "organization": This category includes names of formally structured groups, such as companies, institutions, agencies, or teams, within text.
+                        Here is the entity type information: "organization": This category includes names of formally structured groups, such as companies, institutions, agencies, or teams, within text.
 
-                                The following sentence may exist entities of the type "organization".
+                        The following sentence may exist entities of the type "organization".
 
-                                -If there are entities, please extract entities of the type "organization" and only respond the extracted entities in the format: "Entity" for only one entity or "Entity, Entity" for two or more entities, without any other words.
-                                -If there are no corresponding entities, please respond with an empty string: "" without any other words.
+                        -If there are entities, please extract entities of the type "organization" and only respond the extracted entities in the format: "Entity" for only one entity or "Entity, Entity" for two or more entities, without any other words.
+                        -If there are no corresponding entities, please respond with an empty string: "" without any other words.
 
-                                sentence：{sentence}
-                                """
+                         sentence：{sentence}
+                         """
             payload0 = json.dumps({
                 "model": "gpt-3.5-turbo",
                 "messages": [
@@ -257,31 +205,31 @@ for a in a_list:
             print(res0_list)
 
             template1 = """
-                                  Here is the entity type information: "organization": This category includes names of formally structured groups, such as companies, institutions, agencies, or teams, within text.
-                                  -Please rate the relevance of each phrase in the following list to the type "organization" on a scale of 1 to 10.
-                                  -Please only respond all entities in the list with rating strictly in the format: "Entity//Rating" for only one phrase or "Entity//Rating, Entity//Rating" for two or more phrases, without any other words.
+                        Here is the entity type information: "organization": This category includes names of formally structured groups, such as companies, institutions, agencies, or teams, within text.
+                        -Please rate the relevance of each phrase in the following list to the type "organization" on a scale of 1 to 10.
+                        -Please only respond all entities in the list with rating strictly in the format: "Entity//Rating" for only one phrase or "Entity//Rating, Entity//Rating" for two or more phrases, without any other words.
 
-                                  If the list is empty, please respond with an empty string: "" without any other words.
+                         If the list is empty, please respond with an empty string: "" without any other words.
 
-                                  list: {Entity_list}
+                         list: {Entity_list}
 
-                                  """
+                        """
 
             template4 = """
-                                  Here is the entity type information: "organization": This category includes names of formally structured groups, such as companies, institutions, agencies, or teams, within text.
+                        Here is the entity type information: "organization": This category includes names of formally structured groups, such as companies, institutions, agencies, or teams, within text.
 
-                                  The following sentence may contain entities other than those of the "organization" type. 
+                        The following sentence may contain entities other than those of the "organization" type. 
 
-                                  If there are entities:
-                                  -Please extract all entities other than those of the "organization" type.
-                                  -Please rate the relevance of extracted entities to the type "organization" on a scale of 1 to 10.
-                                  -Please only respond all extracted entities with rating strictly in the format: "Entity//Rating" for only one phrase or "Entity//Rating, Entity//Rating" for two or more phrases, without any other words.
+                        If there are entities:
+                         -Please extract all entities other than those of the "organization" type.
+                         -Please rate the relevance of extracted entities to the type "organization" on a scale of 1 to 10.
+                         -Please only respond all extracted entities with rating strictly in the format: "Entity//Rating" for only one phrase or "Entity//Rating, Entity//Rating" for two or more phrases, without any other words.
 
-                                  If there are no corresponding entities, please respond with an empty string: "" without any other words.
+                         If there are no corresponding entities, please respond with an empty string: "" without any other words.
 
-                                  sentence：{sentence}
+                         sentence：{sentence}
 
-                                  """
+                         """
 
             predict_ORG_entity_list = []
             predict_ORG_rating_list = []
@@ -305,12 +253,7 @@ for a in a_list:
                     res1 = response1.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res1 = ""
-            res1 = res1.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
-                ".",
-                "")
-
-            print("ORG:", file=output_buffer)
-            print(res1, file=output_buffer)
+            res1 = res1.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".","")
 
             print("ORG:")
             print(res1)
@@ -322,7 +265,6 @@ for a in a_list:
 
                 res1_list = [item for item in res1_list if item not in ('', []) and item is not None]
 
-                print(res1_list, file=output_buffer)
                 print(res1_list)
 
                 for predict_ORG in res1_list:
@@ -361,11 +303,7 @@ for a in a_list:
                     res4 = response4.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res4 = ""
-            res4 = res4.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
-                ".", "")
-
-            print("MISC:", file=output_buffer)
-            print(res4, file=output_buffer)
+            res4 = res4.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
 
             print("MISC:")
             print(res4)
@@ -377,7 +315,6 @@ for a in a_list:
                 res4_list = [item.strip() for item in res4.split(',')]
                 res4_list = [item for item in res4_list if item not in ('', []) and item is not None]
 
-                print(res4_list, file=output_buffer)
                 print(res4_list)
 
                 for predict_MISC in res4_list:
@@ -418,7 +355,6 @@ for a in a_list:
             if len(final_ORG_prediction_list) > 0:
                 res1_list = final_ORG_prediction_list
 
-                print(res1_list, file=output_buffer)
                 print(res1_list)
 
                 llm_ORG_entity_num += len(res1_list)
@@ -491,8 +427,6 @@ for a in a_list:
                             if is_wrong_class:
                                 ORG_wrong_class_by_lmm += 1
 
-
-
                 elif len(res1_list) > 0:
                     ORG_wrong_class_by_lmm += len(res1_list)
 
@@ -531,17 +465,7 @@ for a in a_list:
             print("ORG_head_wrong_by_lmm: " + str(ORG_head_wrong_by_lmm))
             print("ORG_miss_by_lmm: " + str(ORG_miss_by_lmm))
             print("wrong_rating_num: " + str(wrong_rating_num))
-
             print("---" * 30)
-
-            print("ORG_entity_num: " + str(ORG_entity_num), file=output_buffer)
-            print("llm_ORG_entity_right_num: " + str(llm_ORG_entity_right_num), file=output_buffer)
-            print("llm_ORG_entity_num: " + str(llm_ORG_entity_num), file=output_buffer)
-            print("ORG_wrong_class_by_lmm: " + str(ORG_wrong_class_by_lmm), file=output_buffer)
-            print("ORG_inside_wrong_by_lmm: " + str(ORG_inside_wrong_by_lmm), file=output_buffer)
-            print("ORG_head_wrong_by_lmm: " + str(ORG_head_wrong_by_lmm), file=output_buffer)
-            print("ORG_miss_by_lmm: " + str(ORG_miss_by_lmm), file=output_buffer)
-            print("---" * 30, file=output_buffer)
 
             line_num += 1
 
@@ -551,16 +475,7 @@ for a in a_list:
 
         f1 = (2 * P * R) / (P + R)
 
-        print("f1: " + str(f1), file=output_buffer)
         print("f1: " + str(f1))
-        output_str = output_buffer.getvalue()
-
-        with open(r"C:\NER\results\ORG_result_with_rule_entitywise_" + str(
-                a) + "\CONLL03_testset_gpt3.5_ORG_withfilter_result_with_describe_0_shot" + str(a) + ".txt", "w",
-                  encoding="utf-8") as file:
-            file.write(output_str)
-
-        output_buffer.close()
 
 
 

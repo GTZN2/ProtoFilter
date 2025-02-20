@@ -1,17 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
+
 from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
-import json
-import io
 import numpy as np
 import pandas as pd
 
@@ -153,9 +145,6 @@ for a in a_list:
         for llm_index in range(len(llm_list)):
             llm = ChatOllama(model=llm_list[llm_index])
 
-
-            output_buffer = io.StringIO()
-
             all_rule_list = []
 
             line_num = 1
@@ -183,10 +172,6 @@ for a in a_list:
                 increase_ORG_head_wrong_by_lmm1 = 0
                 increase_ORG_head_wrong_by_lmm2 = 0
 
-
-
-                print("line:" + str(line_num), file=output_buffer)
-
                 cell_sentence = row[0]
                 if pd.isna(row[1]):
                     cell_entity = []
@@ -203,7 +188,6 @@ for a in a_list:
                     cell_class = str(row[2])
 
 
-
                 template0 = """
                            You are a helpful named entity recognition assistant.
                            The following sentence may exist entities of the type "organization".
@@ -216,9 +200,7 @@ for a in a_list:
                 prompt0 = ChatPromptTemplate.from_template(template0)
                 output_parser = CommaSeparatedListOutputParser()
                 chain = prompt0 | llm | output_parser
-                res0 = chain.invoke({"sentence": cell_sentence}).replace('"', '').replace("'", "").replace("\n",
-                                                                                                           "").replace(
-                    "* ", "").replace("*", "").replace(".", "")
+                res0 = chain.invoke({"sentence": cell_sentence}).replace('"', '').replace("'", "").replace("\n","").replace("* ", "").replace("*", "").replace(".", "")
                 res0 = remove_before_last_colon(res0)
 
                 res0_list = []
@@ -270,9 +252,6 @@ for a in a_list:
                     "* ", "").replace("*", "").replace(".", "")
 
 
-                print("ORG:", file=output_buffer)
-                print(res1, file=output_buffer)
-
                 print("ORG:")
                 print(res1)
 
@@ -283,7 +262,6 @@ for a in a_list:
 
                     res1_list = [item for item in res1_list if item not in ('', []) and item is not None]
 
-                    print(res1_list, file=output_buffer)
                     print(res1_list)
 
                     for predict_ORG in res1_list:
@@ -308,11 +286,7 @@ for a in a_list:
                 prompt4 = ChatPromptTemplate.from_template(template4)
                 output_parser = CommaSeparatedListOutputParser()
                 chain4 = prompt4 | llm | output_parser
-                res4 = chain4.invoke({"sentence": cell_sentence}).replace('"', '').replace(
-                    "'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
-
-                print("MISC:", file=output_buffer)
-                print(res4, file=output_buffer)
+                res4 = chain4.invoke({"sentence": cell_sentence}).replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
 
                 print("MISC:")
                 print(res4)
@@ -323,7 +297,6 @@ for a in a_list:
                     res4_list = [item.strip() for item in res4.split(',')]
                     res4_list = [item for item in res4_list if item not in ('', []) and item is not None]
 
-                    print(res4_list, file=output_buffer)
                     print(res4_list)
 
                     for predict_MISC in res4_list:
@@ -365,7 +338,6 @@ for a in a_list:
                 if len(final_ORG_prediction_list) > 0:
                     res1_list = final_ORG_prediction_list
 
-                    print(res1_list, file=output_buffer)
                     print(res1_list)
 
                     llm_ORG_entity_num += len(res1_list)
@@ -487,17 +459,7 @@ for a in a_list:
                 print("ORG_head_wrong_by_lmm: " + str(ORG_head_wrong_by_lmm))
                 print("ORG_miss_by_lmm: " + str(ORG_miss_by_lmm))
                 print("wrong_rating_num: " + str(wrong_rating_num))
-
                 print("---" * 30)
-
-                print("ORG_entity_num: " + str(ORG_entity_num), file=output_buffer)
-                print("llm_ORG_entity_right_num: " + str(llm_ORG_entity_right_num), file=output_buffer)
-                print("llm_ORG_entity_num: " + str(llm_ORG_entity_num), file=output_buffer)
-                print("ORG_wrong_class_by_lmm: " + str(ORG_wrong_class_by_lmm), file=output_buffer)
-                print("ORG_inside_wrong_by_lmm: " + str(ORG_inside_wrong_by_lmm), file=output_buffer)
-                print("ORG_head_wrong_by_lmm: " + str(ORG_head_wrong_by_lmm), file=output_buffer)
-                print("ORG_miss_by_lmm: " + str(ORG_miss_by_lmm), file=output_buffer)
-                print("---" * 30, file=output_buffer)
 
                 line_num += 1
 
@@ -507,18 +469,11 @@ for a in a_list:
 
             f1 = (2 * P * R) / (P + R)
 
-            print("f1: " + str(f1), file=output_buffer)
             print("f1: " + str(f1))
 
-            output_str = output_buffer.getvalue()
 
 
-            with open(r"" + llm_onlyname_list[
-                llm_index] + "_ORG_withfilter_result_with_describe_0_shot_a:" + str(a) + "b:" + str(b) + ".txt", "w",
-                      encoding="utf-8") as file:
-                file.write(output_str)
 
-            output_buffer.close()
 
 
 
