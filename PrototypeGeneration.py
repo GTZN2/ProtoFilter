@@ -142,7 +142,6 @@ def normList(raw_list):
     return normls
 
 
-# 创建一个 StringIO 对象
 output_buffer = io.StringIO()
 
 raw_list = []
@@ -193,16 +192,13 @@ print("-----" * 100)
 print("rating_list_for_missTarget_right: " + str(rating_list_for_missTarget_right) + '\n')
 print("prototype_for_missTarget_right: " + str(prototype_for_missTarget_right) + '\n')
 print("prototype_for_missTarget_right_disp: " + str(prototype_for_missTarget_right_disp) + '\n')
-# print("prototype_for_missTarget_right_meandist: "+str(prototype_for_missTarget_right_meandist)+'\n')
 
 
 print("rating_list_for_missTarget_wrong: " + str(rating_list_for_missTarget_wrong) + '\n')
 print("prototype_for_missTarget_wrong: " + str(prototype_for_missTarget_wrong) + '\n')
 print("prototype_for_missTarget_wrong_disp: " + str(prototype_for_missTarget_wrong_disp) + '\n')
-# print("prototype_for_missTarget_wrong_meandist: "+str(prototype_for_missTarget_wrong_meandist)+'\n')
 
 print("-----" * 100)
-# 如果有miss，则靠近prototype_for_miss_wrong：MISC→PER
 print("rating_list_for_missMISC_right: " + str(rating_list_for_missMISC_right) + '\n')
 print("prototype_for_missMISC_right: " + str(prototype_for_missMISC_right) + '\n')
 print("prototype_for_missMISC_right_disp: " + str(prototype_for_missMISC_right_disp) + '\n')
@@ -242,10 +238,10 @@ print("prototype_for_missTarget_wrong_disp: " + str(prototype_for_missTarget_wro
 
 output_str = output_buffer.getvalue()
 
-# 将内容写入文件
+
 # with open(r"C:\NER\results\LOC_Proto\CONLL03_testset_"+"qwen2"+"_LOC_Proto.txt", "w", encoding="utf-8") as file:
 # with open(r"C:\NER\results\ORG_Proto\CONLL03_testset_" + "qwen2" + "_ORG_Proto.txt", "w", encoding="utf-8") as file:
 #     file.write(output_str)
 
-# 关闭 StringIO 对象
+
 output_buffer.close()

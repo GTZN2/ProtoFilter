@@ -1,26 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
-from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.prompts import ChatPromptTemplate
+
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
 import json
 import io
-
 import pandas as pd
 import requests
-
-
-
-
 import openpyxl
-import config
+from ProtoFilter import config
+
 
 class CommaSeparatedListOutputParser(BaseOutputParser):
     """Parse the output of an LLM call to a comma-separated list."""
@@ -30,7 +18,18 @@ class CommaSeparatedListOutputParser(BaseOutputParser):
 
         return text.strip()
 
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
 
+
+def remove_think(s):
+    if "</think>" in s:
+        return s.split("</think>")[-1]
+    else:
+        return s
 
 def NER(sheet, entity_type):
 
@@ -46,25 +45,28 @@ def NER(sheet, entity_type):
         'Content-Type': 'application/json'
     }
 
-    llm_entity_right_num = 0
-    llm_entity_num = 0
-
     line_num = 1
 
+    # num. of correctly recogized entities
+    llm_entity_right_num = 0
+
+    # num. of all recogized entities
+    llm_entity_num = 0
+
+    # num. of type misidentification entities
     wrong_class_by_lmm = 0
 
-
+    # num. of missed entities
     miss_by_lmm = 0
 
-
+    # num. of incorrectly recognized left boundary of entities
     inside_wrong_by_lmm = 0
 
-
+    # num. of incorrectly recognized right boundary of entities
     head_wrong_by_lmm = 0
 
-
+    # num. of ground truth entities
     entity_num = 0
-
 
     output_buffer = io.StringIO()
 
@@ -94,17 +96,7 @@ def NER(sheet, entity_type):
         else:
             cell_class = str(row[2])
 
-        def remove_before_last_colon(s):
-            index = s.rfind(':')
-            if index != -1:
-                return s[index + 1:]
-            return s
 
-        def remove_think(s):
-            if "</think>" in s:
-                return s.split("</think>")[-1]
-            else:
-                return s
 
         # NER
         template = """
@@ -286,12 +278,15 @@ def NER(sheet, entity_type):
     output_buffer.close()
 
 
-workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
+if __name__ == "__main__":
+
+    workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
+
+    sheet = workbook.active
+
+    NER(sheet, "Person")
 
 
-sheet = workbook.active
-
-NER(sheet, "Person")
 
 
 

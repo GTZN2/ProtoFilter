@@ -1,25 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
-from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.prompts import ChatPromptTemplate
+
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
 import json
 import io
 import numpy as np
 import pandas as pd
-
 import math
-
 import openpyxl
 import requests
-import config
+from ProtoFilter import config
 
 Baseurl = "https://chatapi.littlewheat.com"
 Skey = config.Skey
@@ -97,37 +87,53 @@ def LOC_compareDistance_for_missMISC(list, llm_index,b):
 
 
 def remove_subsets(strings):
-    # 创建一个副本以避免在迭代时修改列表
     to_remove = []
     for i, s1 in enumerate(strings):
         for s2 in strings:
             if s1 != s2 and s1 in s2:
                 to_remove.append(s1)
-                break  # 无需继续检查，已经确定是子集
+                break
 
-    # 使用集合去重，因为可能同一个元素被多次标记为子集
     to_remove = set(to_remove)
 
-    # 创建新列表，排除需要删除的元素
     result = [s for s in strings if s not in to_remove]
 
     return result
 
+
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
+
+
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
+
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
+
 a_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 b_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 
-#a_list = [0.1,0.2,0.3,0.4]
 
-# 打开Excel文件
 workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
 
-# 选择工作表，假设是第一个工作表
+
 sheet = workbook.active
 
 
 
 
-# 预测了两次，一次LOC，一次MISC
+
 Proto_LOC_wrongclass_right = [[9.5976431, 4.21212121]]
 Proto_LOC_wrongclass_right_disp = [0.999997766612686]
 Proto_LOC_wrongclass_right_dis2pro = [3.3210246156368295]
@@ -155,27 +161,9 @@ Proto_LOC_missMISC_wrong_dis2pro = [0.9244382304918863]
 
 
 
-
-
-
-
-# llm_list = ["gemma2:9b"]
-#
-# llm_onlyname_list = ["gemma2"]
-
-# XXX_entity_num = 1578
-# llm_XXX_entity_right_num =  1268
-# llm_XXX_entity_num = 1608
-
-
-# XXX_entity_num = 1632
-# llm_XXX_entity_right_num =  1072
-# llm_XXX_entity_num = 1655
-
 for a in a_list:
 
     for b in b_list:
-        # 创建一个 StringIO 对象
         output_buffer = io.StringIO()
 
         all_rule_list = []
@@ -205,24 +193,6 @@ for a in a_list:
             increase_LOC_head_wrong_by_lmm1 = 0
             increase_LOC_head_wrong_by_lmm2 = 0
 
-            # 计算总实体数
-            #     if pd.notna(row[2]):
-            #         cell_class = row[2].split(', ')
-            #
-            #         for i in cell_class:
-            #             if i == 'B-LOC':
-            #                 LOC_entity_num += 1
-            #             elif i == 'B-LOC':
-            #                 LOC_entity_num += 1
-            #             elif i == 'B-LOC':
-            #                 LOC_entity_num += 1
-            #             elif i == 'B-MISC':
-            #                 MISC_entity_num += 1
-            #
-            # print(LOC_entity_num)
-            # print(LOC_entity_num)
-            # print(LOC_entity_num)
-            # print(MISC_entity_num)
 
             print("line:" + str(line_num), file=output_buffer)
 
@@ -242,32 +212,10 @@ for a in a_list:
                 cell_class = str(row[2])
 
 
-            def remove_before_last_colon(s):
-                index = s.rfind(':')
-                if index != -1:
-                    return s[index + 1:]
-                return s
 
 
-            def filter_non_int_convertible_elements(lst):
-                # 收集不能转换为整数的元素的索引
-                indices_to_remove = []
-                for index, element in enumerate(lst):
-                    try:
-                        float(element)
-                    except ValueError:
-                        indices_to_remove.append(index)
-
-                # 从后往前删除元素，以避免索引移动的问题
-                for index in reversed(indices_to_remove):
-                    del lst[index]
-
-                return lst, indices_to_remove
 
 
-            # belong to four types of entities: LOCson, location, location, and miscellaneous entity.
-
-            # 创建提示模板
             template0 = """
                                         You are a helpful named entity recognition assistant.
                                         The following sentence may exist entities of the type "location".
@@ -294,7 +242,6 @@ for a in a_list:
                     res0 = response0.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res0 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res0 = res0.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
                 ".", "")
             res0 = remove_before_last_colon(res0)
@@ -308,7 +255,6 @@ for a in a_list:
 
             print(res0_list)
 
-            # 创建提示模板
             template1 = """
                                               Here is the entity class information: "location": This category includes names of specific geographical places, such as cities, countries, regions, or landmarks, within text.
                                               -Please rate the relevance of each phrase in the following list to the type "location" on a scale of 1 to 10.
@@ -333,7 +279,6 @@ for a in a_list:
                                                       sentence：{sentence}
                                                       """
 
-            # -If these noun phrases do not belong to the entity category in the question, please rate the lack of relevance between these noun phrases and the category in the question on a scale of -1 to -10.
             predict_LOC_entity_list = []
             predict_LOC_rating_list = []
             predict_MISC_entity_list = []
@@ -356,7 +301,6 @@ for a in a_list:
                     res1 = response1.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res1 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res1 = res1.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
                 ".", "")
 
@@ -412,7 +356,6 @@ for a in a_list:
                     res4 = response4.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res4 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res4 = res4.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
                 ".", "")
 
@@ -423,7 +366,6 @@ for a in a_list:
             print(res4)
 
             res4 = remove_before_last_colon(res4)
-            # llm_LOC_entity_results.append(res)
 
             if 'This ' not in res4 and 'There ' not in res4 and res4 != '':
                 res4_list = [item.strip() for item in res4.split(',')]
@@ -577,7 +519,6 @@ for a in a_list:
                     if cell_class[i] == "B-LOC":
                         LOC_miss_by_lmm += 1
                         LOC_entity_num += 1
-            # 重复计算
             LOC_wrong_class_by_lmm -= increase_LOC_head_wrong_by_lmm1
 
             print("LOC_entity_num: " + str(LOC_entity_num))
@@ -610,16 +551,14 @@ for a in a_list:
 
         print("f1: " + str(f1), file=output_buffer)
         print("f1: " + str(f1))
-        # 获取 StringIO 对象的内容
         output_str = output_buffer.getvalue()
 
-        # 将内容写入文件
+
         with open(r"C:\NER\results\LOC_result_with_rule_entitywise_" + str(
                 a) + "\CONLL03_validset_gpt3.5_LOC_withfilter_result_with_describe_0_shot" + str(a) + ".txt", "w",
                   encoding="utf-8") as file:
             file.write(output_str)
 
-        # 关闭 StringIO 对象
         output_buffer.close()
 
 

@@ -1,15 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
-from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
 import json
 import io
 import numpy as np
@@ -19,7 +10,7 @@ import math
 
 import openpyxl
 import requests
-import config
+from ProtoFilter import config
 
 Baseurl = "https://chatapi.littlewheat.com"
 Skey = config.Skey
@@ -69,10 +60,6 @@ def ORG_compareDistance_for_wrongclass_to_add(list, llm_index):
 
 
 def ORG_compareDistance_for_wrongclass_to_remove(list, llm_index, a):
-    base_gap_right = Proto_ORG_wrongclass_right[llm_index][0] - Proto_ORG_wrongclass_right[llm_index][1]  # 1
-    base_gap_wrong = Proto_ORG_wrongclass_wrong[llm_index][0] - Proto_ORG_wrongclass_wrong[llm_index][1]  # -1.5
-
-    prediction_gap = float(list[0]) - float(list[1])
 
     distance_right4 = math.sqrt((Proto_ORG_wrongclass_right[llm_index][0] - float(list[0])) ** 2 + (
             Proto_ORG_wrongclass_right[llm_index][1] - float(list[1])) ** 2)
@@ -82,7 +69,6 @@ def ORG_compareDistance_for_wrongclass_to_remove(list, llm_index, a):
     if distance_right4 > a * Proto_ORG_wrongclass_right_dis2pro[llm_index] and float(list[0]) < \
             Proto_ORG_wrongclass_wrong[llm_index][0] and float(list[1]) < Proto_ORG_wrongclass_wrong[llm_index][1]:
 
-        # if distance_wrong4 > Proto_ORG_wrongclass_wrong_dis2pro[llm_index] and float(list[0]) < Proto_ORG_wrongclass_wrong[llm_index][0] and float(list[1]) < Proto_ORG_wrongclass_wrong[llm_index][1]:
         return True
     else:
         return False
@@ -120,6 +106,27 @@ def remove_subsets(strings):
     result = [s for s in strings if s not in to_remove]
 
     return result
+
+
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
+
+
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
+
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
 
 
 a_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
@@ -205,32 +212,7 @@ for a in a_list:
                 cell_class = str(row[2])
 
 
-            def remove_before_last_colon(s):
-                index = s.rfind(':')
-                if index != -1:
-                    return s[index + 1:]
-                return s
 
-
-            def filter_non_int_convertible_elements(lst):
-                # 收集不能转换为整数的元素的索引
-                indices_to_remove = []
-                for index, element in enumerate(lst):
-                    try:
-                        float(element)
-                    except ValueError:
-                        indices_to_remove.append(index)
-
-                # 从后往前删除元素，以避免索引移动的问题
-                for index in reversed(indices_to_remove):
-                    del lst[index]
-
-                return lst, indices_to_remove
-
-
-            # belong to four types of entities: ORGson, location, location, and miscellaneous entity.
-
-            # 创建提示模板
             template0 = """
                                 You are a helpful named entity recognition assistant.
 
@@ -260,7 +242,6 @@ for a in a_list:
                     res0 = response0.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res0 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res0 = res0.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
                 ".",
                 "")
@@ -275,7 +256,6 @@ for a in a_list:
 
             print(res0_list)
 
-            # 创建提示模板
             template1 = """
                                   Here is the entity type information: "organization": This category includes names of formally structured groups, such as companies, institutions, agencies, or teams, within text.
                                   -Please rate the relevance of each phrase in the following list to the type "organization" on a scale of 1 to 10.
@@ -303,7 +283,6 @@ for a in a_list:
 
                                   """
 
-            # -If these noun phrases do not belong to the entity category in the question, please rate the lack of relevance between these noun phrases and the category in the question on a scale of -1 to -10.
             predict_ORG_entity_list = []
             predict_ORG_rating_list = []
             predict_MISC_entity_list = []
@@ -326,7 +305,6 @@ for a in a_list:
                     res1 = response1.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res1 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res1 = res1.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
                 ".",
                 "")
@@ -383,7 +361,6 @@ for a in a_list:
                     res4 = response4.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res4 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res4 = res4.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
                 ".", "")
 

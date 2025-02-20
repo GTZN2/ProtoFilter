@@ -1,22 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
+
 from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
-import json
 import io
 import numpy as np
 import pandas as pd
-
 import math
-
 import openpyxl
 
 
@@ -89,6 +80,27 @@ def remove_subsets(strings):
     result = [s for s in strings if s not in to_remove]
 
     return result
+
+
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
+
+
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
+
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
 
 
 
@@ -187,32 +199,6 @@ for a in a_list:
                     cell_class = str(row[2])
 
 
-                def remove_before_last_colon(s):
-                    index = s.rfind(':')
-                    if index != -1:
-                        return s[index + 1:]
-                    return s
-
-
-                def filter_non_int_convertible_elements(lst):
-
-                    indices_to_remove = []
-                    for index, element in enumerate(lst):
-                        try:
-                            float(element)
-                        except ValueError:
-                            indices_to_remove.append(index)
-
-
-                    for index in reversed(indices_to_remove):
-                        del lst[index]
-
-                    return lst, indices_to_remove
-
-
-                # belong to four types of entities: LOCson, person, person, and miscellaneous entity.
-
-
                 template0 = """
                         You are a helpful named entity recognition assistant.
                         The following sentence may exist entities of the type "location".
@@ -239,7 +225,6 @@ for a in a_list:
 
                 print(res0_list)
 
-                # 创建提示模板
                 template1 = """
                               Here is the entity class information: "location": This category includes names of specific geographical places, such as cities, countries, regions, or landmarks, within text.
                               -Please rate the relevance of each phrase in the following list to the type "location" on a scale of 1 to 10.
@@ -365,12 +350,6 @@ for a in a_list:
                         elif LOC_compareDistance_for_missMISC([predict_LOC_rating_list[i], 0], llm_index, b):
                             final_LOC_prediction_list.remove(predict_LOC_entity_list[i])
 
-                # if len(predict_MISC_entity_list) > 0:
-                #     for i in range(len(predict_MISC_entity_list)):
-                #
-                #         if predict_MISC_entity_list[i] not in res0_list:
-                #             if LOC_compareDistance_for_missTarget([0, predict_MISC_rating_list[i]], llm_index):
-                #                 final_LOC_prediction_list.append(predict_MISC_entity_list[i])
 
                 final_LOC_prediction_list = remove_subsets(final_LOC_prediction_list)
 
@@ -393,9 +372,6 @@ for a in a_list:
                                 if cell_entity[i].lower() not in " ".join(res1_list).lower():
                                     LOC_miss_by_lmm += 1
 
-                        # for y in cell_LOC_entity_head:
-                        #     if y.lower() not in res1.lower():
-                        #         LOC_miss_by_lmm += 1
 
                         for r in res1_list:
                             if r.split()[0].lower() not in [s.lower() for s in cell_LOC_entity_head]:
@@ -407,20 +383,14 @@ for a in a_list:
                             for k in range(len(res1_list)):
                                 is_wrong_class = False
                                 if res1_list[k] not in checked_entity_in_prediction:
-                                    # 如果GT里的实体在llm的回复里
                                     if cell_entity[indexes[j]].lower() in " ".join(res1_list).lower():
-                                        # 如果该真实实体的第一个token==llm的回复里的实体的第一个token
                                         if cell_entity[indexes[j]].lower() == res1_list[k].split()[0].lower():
                                             checked_entity_in_prediction.append(res1_list[k])
 
                                             is_wrong_class = True
-                                            # llm的回复里的实体长度大于1
                                             if len(res1_list[k].split()) > 1:
-                                                # 真实实体除了当前第一个token还有没有check的token
                                                 if len(cell_entity) > indexes[j] + 1:
-                                                    # 真实实体除第一个token的下一个token的标签是'I-LOC'
                                                     if cell_class[indexes[j] + 1] == 'I-LOC':
-                                                        # 真实实体除第一个token的下一个token和llm预测的实体第二个token一致
                                                         if cell_entity[indexes[j] + 1].lower() == res1_list[k].split()[
                                                             1].lower():
                                                             llm_LOC_entity_right_num += 1
@@ -456,10 +426,7 @@ for a in a_list:
                                                 if res1_list[k].split()[0].lower() not in " ".join(res1_list).lower():
                                                     increase_LOC_head_wrong_by_lmm2 += 1
                                                     checked_entity_in_prediction.append(res1_list[k])
-                                                # else:
-                                                #
-                                                #
-                                                #     increase_LOC_head_wrong_by_lmm2 += 1
+
 
                                 if is_wrong_class:
                                     LOC_wrong_class_by_lmm += 1
@@ -495,7 +462,6 @@ for a in a_list:
                         if cell_class[i] == "B-LOC":
                             LOC_miss_by_lmm += 1
                             LOC_entity_num += 1
-                # 重复计算
                 LOC_wrong_class_by_lmm -= increase_LOC_head_wrong_by_lmm1
 
                 print("LOC_entity_num: " + str(LOC_entity_num))
@@ -528,17 +494,14 @@ for a in a_list:
 
             print("f1: " + str(f1), file=output_buffer)
             print("f1: " + str(f1))
-            # 获取 StringIO 对象的内容
             output_str = output_buffer.getvalue()
 
-            # 将内容写入文件
             with open(r"C:\NER\results\withFilter\LOC\LOC_result_with_rule_entitywise_a:" + str(a) + "b:" + str(
                     b) + "\CONLL03_validset_" + llm_onlyname_list[
                           llm_index] + "_LOC_withfilter_result_with_describe_0_shot" + str(a) + ".txt", "w",
                       encoding="utf-8") as file:
                 file.write(output_str)
 
-            # 关闭 StringIO 对象
             output_buffer.close()
 
 

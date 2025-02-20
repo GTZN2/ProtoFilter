@@ -1,22 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
+
 from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
-import json
 import io
 import numpy as np
 import pandas as pd
-
 import math
-
 import openpyxl
 
 
@@ -82,6 +73,27 @@ def remove_subsets(strings):
     result = [s for s in strings if s not in to_remove]
 
     return result
+
+
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
+
+
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
+
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
 
 a_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 b_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
@@ -175,25 +187,7 @@ for a in a_list:
                     cell_class = str(row[2])
 
 
-                def remove_before_last_colon(s):
-                    index = s.rfind(':')
-                    if index != -1:
-                        return s[index + 1:]
-                    return s
 
-
-                def filter_non_int_convertible_elements(lst):
-                    indices_to_remove = []
-                    for index, element in enumerate(lst):
-                        try:
-                            float(element)
-                        except ValueError:
-                            indices_to_remove.append(index)
-
-                    for index in reversed(indices_to_remove):
-                        del lst[index]
-
-                    return lst, indices_to_remove
 
 
 

@@ -1,15 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
-from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
 import json
 import io
 import numpy as np
@@ -19,7 +10,7 @@ import math
 
 import openpyxl
 import requests
-import config
+from ProtoFilter import config
 
 Baseurl = "https://chatapi.littlewheat.com"
 Skey = config.Skey
@@ -86,10 +77,6 @@ def PER_compareDistance_for_wrongclass_to_remove(list, llm_index,a):
 def PER_compareDistance_for_missMISC(list, llm_index,b):
 
 
-
-
-
-
     if Proto_PER_missMISC_right[llm_index][0] - float(list[0])> b* Proto_PER_missMISC_wrong_dis2pro[llm_index] :
 
 
@@ -97,45 +84,49 @@ def PER_compareDistance_for_missMISC(list, llm_index,b):
     else:
         return False
 
-
-
-    # if distance_right < distance_wrong:
-    if float(list[1]) == 10:
-        return True
-    else:
-        return False
-
-
 def remove_subsets(strings):
-    # 创建一个副本以避免在迭代时修改列表
     to_remove = []
     for i, s1 in enumerate(strings):
         for s2 in strings:
             if s1 != s2 and s1 in s2:
                 to_remove.append(s1)
-                break  # 无需继续检查，已经确定是子集
+                break
 
-    # 使用集合去重，因为可能同一个元素被多次标记为子集
     to_remove = set(to_remove)
 
-    # 创建新列表，排除需要删除的元素
     result = [s for s in strings if s not in to_remove]
 
     return result
 
-#a_list = [0.5,0.6,0.7,0.8,0.9,1]
+
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
+
+
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
+
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
+
 a_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 b_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
 
-#a_list = [0.1,0.2,0.3,0.4]
 
-# 打开Excel文件
 workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
 
-# 选择工作表，假设是第一个工作表
 sheet = workbook.active
 
-# 预测了两次，一次PER，一次MISC
 Proto_PER_wrongclass_right = [[9.03225806, 2.78225806]]
 Proto_PER_wrongclass_right_disp = [0.999864024486007]
 Proto_PER_wrongclass_right_dis2pro = [2.47320950241337]
@@ -159,13 +150,6 @@ Proto_PER_missMISC_right_dis2pro = [0.6209322469778715]
 Proto_PER_missMISC_wrong = [[8.35365854, 0]]
 Proto_PER_missMISC_wrong_disp = [0.8669386960461114]
 Proto_PER_missMISC_wrong_dis2pro = [1.1335514574657943]
-
-
-
-
-
-
-
 
 
 
@@ -205,7 +189,7 @@ for a in a_list:
 
             print("line:" + str(line_num), file=output_buffer)
 
-            cell_sentence = row[0]  # 第一列的值
+            cell_sentence = row[0]
             if pd.isna(row[1]):
                 cell_entity = []
             elif ', ' in row[1]:
@@ -221,25 +205,7 @@ for a in a_list:
                 cell_class = str(row[2])
 
 
-            def remove_before_last_colon(s):
-                index = s.rfind(':')
-                if index != -1:
-                    return s[index + 1:]
-                return s
 
-
-            def filter_non_int_convertible_elements(lst):
-                indices_to_remove = []
-                for index, element in enumerate(lst):
-                    try:
-                        float(element)
-                    except ValueError:
-                        indices_to_remove.append(index)
-
-                for index in reversed(indices_to_remove):
-                    del lst[index]
-
-                return lst, indices_to_remove
 
 
 
@@ -268,7 +234,6 @@ for a in a_list:
                     res0 = response0.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res0 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res0 = res0.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
             res0 = remove_before_last_colon(res0)
 
@@ -281,7 +246,6 @@ for a in a_list:
 
             print(res0_list)
 
-            # 创建提示模板
             template1 = """
                         Here is the entity class information: Person: This category includes names of persons, such as individual people or groups of people with personal names.
                           -Please rate the relevance of each phrase in the following list to the type "person" on a scale of 1 to 10.
@@ -306,7 +270,6 @@ for a in a_list:
                       sentence：{sentence}
                       """
 
-            # -If these noun phrases do not belong to the entity category in the question, please rate the lack of relevance between these noun phrases and the category in the question on a scale of -1 to -10.
             predict_PER_entity_list = []
             predict_PER_rating_list = []
             predict_MISC_entity_list = []
@@ -329,7 +292,6 @@ for a in a_list:
                     res1 = response1.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res1 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res1 = res1.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".", "")
 
             print("PER:", file=output_buffer)
@@ -384,7 +346,6 @@ for a in a_list:
                     res4 = response4.json()['choices'][0]['message']['content']
                 except requests.exceptions.JSONDecodeError:
                     res4 = ""
-            # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
             res4 = res4.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(
                 ".", "")
 
@@ -395,7 +356,6 @@ for a in a_list:
             print(res4)
 
             res4 = remove_before_last_colon(res4)
-            # llm_PER_entity_results.append(res)
 
             if 'This ' not in res4 and 'There ' not in res4 and res4 != '':
                 res4_list = [item.strip() for item in res4.split(',')]

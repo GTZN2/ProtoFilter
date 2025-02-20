@@ -1,22 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
 from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
-import json
 import io
-
 import pandas as pd
-
-
-
 import openpyxl
 
 
@@ -29,37 +17,46 @@ class CommaSeparatedListOutputParser(BaseOutputParser):
         return text.strip()
 
 
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
 
 
+def remove_think(s):
+    if "</think>" in s:
+        return s.split("</think>")[-1]
+    else:
+        return s
 
 
 def NER(llm_list, llm_onlyname_list, entity_type,sheet):
     label = entity_type[:3].upper()
     for llm_index in range(len(llm_list)):
         llm = ChatOllama(model=llm_list[llm_index])
-
-
-
-        llm_entity_right_num = 0
-        llm_entity_num = 0
         line_num = 1
 
+        # num. of correctly recogized entities
+        llm_entity_right_num = 0
 
+        # num. of all recogized entities
+        llm_entity_num = 0
 
+        # num. of type misidentification entities
         wrong_class_by_lmm = 0
 
-
+        # num. of missed entities
         miss_by_lmm = 0
 
-
+        # num. of incorrectly recognized left boundary of entities
         inside_wrong_by_lmm = 0
 
-
+        # num. of incorrectly recognized right boundary of entities
         head_wrong_by_lmm = 0
 
-
+        # num. of ground truth entities
         entity_num = 0
-
 
         output_buffer = io.StringIO()
 
@@ -67,11 +64,13 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
 
             print("line:" + str(line_num))
 
+            # repeatedly recorded entities
             increase_head_wrong_by_lmm1 = 0
             increase_head_wrong_by_lmm2 = 0
 
             print("line:" + str(line_num), file=output_buffer)
 
+            # sentence processing
             cell_sentence = row[0]
             if pd.isna(row[1]):
                 cell_entity = []
@@ -87,17 +86,6 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
             else:
                 cell_class = str(row[2])
 
-            def remove_before_last_colon(s):
-                index = s.rfind(':')
-                if index != -1:
-                    return s[index + 1:]
-                return s
-
-            def remove_think(s):
-                if "</think>" in s:
-                    return s.split("</think>")[-1]
-                else:
-                    return s
 
             # 创建提示模板
             template = """
@@ -116,6 +104,7 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
 
             res1 = remove_before_last_colon(res1)
             res1 = remove_think(res1)
+
 
             if 'This ' not in res1 and 'There ' not in res1 and res1 != '' and ' no ' not in res1:
                 res1_list = [item.strip() for item in res1.split(',')]
@@ -256,16 +245,21 @@ def NER(llm_list, llm_onlyname_list, entity_type,sheet):
         output_buffer.close()
 
 
+if __name__ == "__main__":
 
-workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
+    workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
 
-sheet = workbook.active
+    sheet = workbook.active
 
-llm_list = ["qwen2:7b", "llama3:8b", "gemma:7b", "llama3.1:8b", "qwen2.5:7b","gemma2:9b", "mistral:7b", "deepseek-r1"]
+    llm_list = ["qwen2:7b", "llama3:8b", "gemma:7b", "llama3.1:8b", "qwen2.5:7b", "gemma2:9b", "mistral:7b", "deepseek-r1"]
 
-llm_onlyname_list = ["qwen2", "llama3", "gemma", "llama3.1", "qwen2.5","gemma2" , "mistral", "deepseek-r1"]
+    llm_onlyname_list = ["qwen2", "llama3", "gemma", "llama3.1", "qwen2.5", "gemma2", "mistral", "deepseek-r1"]
 
-NER(llm_list,llm_onlyname_list,"Person",sheet)
+    NER(llm_list, llm_onlyname_list, "Person", sheet)
+
+
+
+
 
 
 

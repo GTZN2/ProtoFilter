@@ -1,24 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
-from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.prompts import ChatPromptTemplate
+
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
 import json
 import io
 import requests
 import pandas as pd
-
-
-
 import openpyxl
-import config
+from ProtoFilter import config
+
 
 class CommaSeparatedListOutputParser(BaseOutputParser):
     """Parse the output of an LLM call to a comma-separated list."""
@@ -29,9 +19,25 @@ class CommaSeparatedListOutputParser(BaseOutputParser):
         return text.strip()
 
 
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
 
 
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
 
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
 
 
 def Rating_Collect(sheet,entity_type,label_descri):
@@ -78,24 +84,7 @@ def Rating_Collect(sheet,entity_type,label_descri):
         else:
             cell_class = str(row[2])
 
-        def remove_before_last_colon(s):
-            index = s.rfind(':')
-            if index != -1:
-                return s[index + 1:]
-            return s
 
-        def filter_non_int_convertible_elements(lst):
-            indices_to_remove = []
-            for index, element in enumerate(lst):
-                try:
-                    float(element)
-                except ValueError:
-                    indices_to_remove.append(index)
-
-            for index in reversed(indices_to_remove):
-                del lst[index]
-
-            return lst, indices_to_remove
 
 
         template1 = """
@@ -199,7 +188,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
                 res4 = response4.json()['choices'][0]['message']['content']
             except requests.exceptions.JSONDecodeError:
                 res4 = ""
-        # response4 = requests.request("POST", url, headers=headers, data=payload4).json()['choices'][0]['message']['content']
         res4 = res4.replace('"', '').replace("'", "").replace("\n", "").replace("* ", "").replace("*", "").replace(".",
                                                                                                                    "")
 
@@ -210,7 +198,6 @@ def Rating_Collect(sheet,entity_type,label_descri):
         print(res4)
 
         res4 = remove_before_last_colon(res4)
-        # llm_PER_entity_results.append(res)
 
         if 'This' not in res4 and 'There' not in res4 and res4 != '':
             res4_list = [item.strip() for item in res4.split(',')]
@@ -417,13 +404,18 @@ def Rating_Collect(sheet,entity_type,label_descri):
     output_buffer.close()
 
 
-workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
 
-sheet = workbook.active
+if __name__ == "__main__":
 
-label_des = ""
+    workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
 
-Rating_Collect(sheet, "Person",label_des)
+    sheet = workbook.active
+
+    label_des = ""
+
+    Rating_Collect(sheet, "Person", label_des)
+
+
 
 
 

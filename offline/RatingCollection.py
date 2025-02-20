@@ -1,22 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from langchain_community.vectorstores import FAISS
+
 from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from docx import Document
-import pdfplumber
-import csv
-import json
 import io
-
 import pandas as pd
-
-
-
 import openpyxl
 
 
@@ -29,9 +18,25 @@ class CommaSeparatedListOutputParser(BaseOutputParser):
         return text.strip()
 
 
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
 
 
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
 
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
 
 
 def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
@@ -41,7 +46,7 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
     for llm_index in range(len(llm_list)):
         llm = ChatOllama(model=llm_list[llm_index])
 
-        # 创建一个 StringIO 对象
+
         output_buffer = io.StringIO()
 
         all_rule_list = []
@@ -53,7 +58,7 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
             print("line:" + str(line_num))
             print("line:" + str(line_num), file=output_buffer)
 
-            cell_sentence = row[0]  # 第一列的值
+            cell_sentence = row[0]
             if pd.isna(row[1]):
                 cell_entity = []
             elif ', ' in row[1]:
@@ -67,28 +72,6 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
                 cell_class = row[2].split(', ')
             else:
                 cell_class = str(row[2])
-
-            def remove_before_last_colon(s):
-                index = s.rfind(':')
-                if index != -1:
-                    return s[index + 1:]
-                return s
-
-            def filter_non_int_convertible_elements(lst):
-                # 收集不能转换为整数的元素的索引
-                indices_to_remove = []
-                for index, element in enumerate(lst):
-                    try:
-                        float(element)
-                    except ValueError:
-                        indices_to_remove.append(index)
-
-                # 从后往前删除元素，以避免索引移动的问题
-                for index in reversed(indices_to_remove):
-                    del lst[index]
-
-                return lst, indices_to_remove
-
 
 
             template1 = """
@@ -119,7 +102,6 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
 
                           """
 
-            # -If these noun phrases do not belong to the entity category in the question, please rate the lack of relevance between these noun phrases and the category in the question on a scale of -1 to -10.
             predict_entity_list = []
             predict_rating_list = []
             predict_MISC_entity_list = []
@@ -377,18 +359,21 @@ def RatingCollect(llm_list,llm_onlyname_list,entity_type,sheet,label_descri):
 
 
 
+if __name__ == "__main__":
 
-workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
+    workbook = openpyxl.load_workbook('../dataset/conll03_test.xlsx')
 
-sheet = workbook.active
+    sheet = workbook.active
 
-llm_list = [ "qwen2:7b", "llama3:8b", "gemma:7b", "llama3.1:8b", "qwen2.5:7b", "mistral:7b","gemma2:9b"]
+    llm_list = ["qwen2:7b", "llama3:8b", "gemma:7b", "llama3.1:8b", "qwen2.5:7b", "mistral:7b", "gemma2:9b"]
 
-llm_onlyname_list = ["qwen2", "llama3", "gemma", "llama3.1", "qwen2.5", "mistral","gemma2"]
+    llm_onlyname_list = ["qwen2", "llama3", "gemma", "llama3.1", "qwen2.5", "mistral", "gemma2"]
 
-LD = ""
+    # label description
+    LD = ""
 
-RatingCollect(llm_list,llm_onlyname_list,"Person",sheet,LD)
+    RatingCollect(llm_list, llm_onlyname_list, "Person", sheet, LD)
+
 
 
 

@@ -84,6 +84,27 @@ def remove_subsets(strings):
 
     return result
 
+
+def remove_before_last_colon(s):
+    index = s.rfind(':')
+    if index != -1:
+        return s[index + 1:]
+    return s
+
+
+def filter_non_int_convertible_elements(lst):
+    indices_to_remove = []
+    for index, element in enumerate(lst):
+        try:
+            float(element)
+        except ValueError:
+            indices_to_remove.append(index)
+
+    for index in reversed(indices_to_remove):
+        del lst[index]
+
+    return lst, indices_to_remove
+
 a_list = [1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
 b_list = [1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
 
@@ -180,31 +201,6 @@ for a in a_list:
                     cell_class = row[2].split(', ')
                 else:
                     cell_class = str(row[2])
-
-
-                def remove_before_last_colon(s):
-                    index = s.rfind(':')
-                    if index != -1:
-                        return s[index + 1:]
-                    return s
-
-
-                def filter_non_int_convertible_elements(lst):
-
-                    indices_to_remove = []
-                    for index, element in enumerate(lst):
-                        try:
-                            float(element)
-                        except ValueError:
-                            indices_to_remove.append(index)
-
-
-                    for index in reversed(indices_to_remove):
-                        del lst[index]
-
-                    return lst, indices_to_remove
-
-
 
 
 
@@ -322,7 +318,6 @@ for a in a_list:
                 print(res4)
 
                 res4 = remove_before_last_colon(res4)
-                # llm_ORG_entity_results.append(res)
 
                 if 'This ' not in res4 and 'There ' not in res4 and res4 != '':
                     res4_list = [item.strip() for item in res4.split(',')]
@@ -481,7 +476,7 @@ for a in a_list:
                         if cell_class[i] == "B-ORG":
                             ORG_miss_by_lmm += 1
                             ORG_entity_num += 1
-                # 重复计算
+
                 ORG_wrong_class_by_lmm -= increase_ORG_head_wrong_by_lmm1
 
                 print("ORG_entity_num: " + str(ORG_entity_num))
@@ -514,7 +509,7 @@ for a in a_list:
 
             print("f1: " + str(f1), file=output_buffer)
             print("f1: " + str(f1))
-            # 获取 StringIO 对象的内容
+
             output_str = output_buffer.getvalue()
 
 
